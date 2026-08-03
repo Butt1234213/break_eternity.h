@@ -86,6 +86,10 @@ bool Decimal::isZero(T a) {
 		return false;
 	}
 }
+template bool Decimal::isZero<int>(int);
+template bool Decimal::isZero<long>(long);
+template bool Decimal::isZero<float>(float);
+template bool Decimal::isZero<double>(double);
 
 template <typename T>
 Decimal::Sign Decimal::toSign(T a) {
@@ -98,7 +102,10 @@ Decimal::Sign Decimal::toSign(T a) {
 		return 1;
 	}
 }
+template Decimal::Sign Decimal::toSign<int>(int);
 template Decimal::Sign Decimal::toSign<long>(long);
+template Decimal::Sign Decimal::toSign<float>(float);
+template Decimal::Sign Decimal::toSign<double>(double);
 
 Decimal::Sign Decimal::signFromStr(std::string a) {
 	char front = a.front();
@@ -181,7 +188,10 @@ Decimal::Layer Decimal::layerChecker(T a, Layer b) {
 		return b;
 	}
 }
+template Decimal::Layer Decimal::layerChecker<int>(int, Layer);
 template Decimal::Layer Decimal::layerChecker<long>(long, Layer);
+template Decimal::Layer Decimal::layerChecker<float>(float, Layer);
+template Decimal::Layer Decimal::layerChecker<double>(double, Layer);
 
 template<typename T>
 Decimal::Mag Decimal::setMagBasedOnLayer(T a, Layer b, Sign c) {
@@ -194,7 +204,10 @@ Decimal::Mag Decimal::setMagBasedOnLayer(T a, Layer b, Sign c) {
 		return a;
 	}
 }
+template Decimal::Mag Decimal::setMagBasedOnLayer<int>(int, Layer, Sign);
 template Decimal::Mag Decimal::setMagBasedOnLayer<long>(long, Layer, Sign);
+template Decimal::Mag Decimal::setMagBasedOnLayer<float>(float, Layer, Sign);
+template Decimal::Mag Decimal::setMagBasedOnLayer<double>(double, Layer, Sign);
 
 Decimal* Decimal::toPtr(Decimal a) {
 	return &a;
@@ -778,60 +791,10 @@ Decimal Decimal::add(Decimal a, Decimal b) {
 Decimal Decimal::add(Decimal a) {
 	return add(*this, a);
 }
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::add(Decimal a, T b) {
-	if (isZero(b)) return a;
-	if (a.sign == 0) return I(static_cast<double>(b));
-
-	Decimal A;
-	T B;
-	if (cmpabs(a, b) > 0) {
-		A = a;
-		B = b;
-	}
-	else {
-		B = toDouble(a);
-		A = I(static_cast<double>(b));
-	}
-	if (A.layer == 0) return I(A.mag * A.sign + B);
-	else {
-		if (std::abs(B) >= EXP_LIMIT) {
-			double x = A.mag - B;
-			if (std::abs(x) > MAX_SIGNIFICANT_DIGITS) return A;
-			double _magdiff = std::pow(10, -x);
-			double _mantissa = toSign(B) + (A.sign * _magdiff);
-			return FC(toSign(_mantissa), 1, B + d_maglog10(_mantissa));
-		} else {
-			double x = A.mag - std::log10(static_cast<double>(B));
-			if (std::abs(x) > MAX_SIGNIFICANT_DIGITS) return A;
-			double _magdiff = std::pow(10, -x);
-			double _mantissa = toSign(B) + (A.sign * _magdiff);
-			return FC(toSign(_mantissa), 1, std::log10(static_cast<double>(B)) + d_maglog10(_mantissa));
-		}
-	}
-	try {
-		throw std::invalid_argument("Invalid arguments for addition");
-	}
-	catch (const std::invalid_argument e) {
-		std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
-	}
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::add(T a) {
-	return add(*this, a);
-}
 Decimal Decimal::plus(Decimal a, Decimal b) {
 	return add(a, b);
 }
 Decimal Decimal::plus(Decimal a) {
-	return add(*this, a);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::plus(Decimal a, T b) {
-	return add(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::plus(T a) {
 	return add(*this, a);
 }
 Decimal Decimal::sub(Decimal a, Decimal b) {
@@ -898,64 +861,10 @@ Decimal Decimal::mul(Decimal a, Decimal b) {
 Decimal Decimal::mul(Decimal a) {
 	return mul(*this, a);
 }
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::mul(Decimal a, T b) {
-	if (a.sign == 0 || isZero(b)) return Decimal();
-
-	//turning b into a decimal but with way less overhead
-	int layerb = 0, signb = toSign(b);
-	if (std::abs(b) >= EXP_LIMIT) {
-		layerb = 1;
-		b = std::log10(std::abs(b));
-	} 
-
-	if (a.layer == layerb && a.mag == -b) return FC(a.sign * signb, 0, 1);
-
-	Decimal A;
-	T B;
-	if (a.layer > layerb || (a.layer == layerb && std::abs(a.mag) > std::abs(b))) {
-		A = a;
-		B = b;
-	}
-	else {
-		A = I(b);
-		layerb = a.layer;
-		signb = a.sign;
-		B = a.toDouble();
-	}
-
-	if (A.layer == 0 && layerb == 0) return I(A.sign * signb * A.mag * B);
-	else if (A.layer >= 3 || A.layer - layerb == 2) return FC(A.sign * signb, A.layer, A.mag);
-	else if (A.layer == 1 && layerb == 0) return FC(A.sign * signb, 1, A.mag + std::log10(B));
-	else if (A.layer == 1 && layerb == 1) return FC(A.sign * signb, 1, A.mag + B);
-	else if ((A.layer == 2 && layerb == 1) || (A.layer == 2 && layerb == 2)) {
-		Decimal _newDecimal = add(FC(toSign(A.mag), A.layer - 1, std::abs(A.mag)), (FC(toSign(B), layerb - 1, std::abs(B))));
-		return FC(A.sign * signb, _newDecimal.layer + 1, _newDecimal.sign * _newDecimal.mag);
-	}
-	try {
-		throw std::invalid_argument("Invalid arguments for multiplication");
-	}
-	catch (const std::invalid_argument e) {
-		std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
-		return Decimal();
-	}
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::mul(T a) {
-	return mul(*this, a);
-}
 Decimal Decimal::mult(Decimal a, Decimal b) {
 	return mul(a, b);
 }
 Decimal Decimal::mult(Decimal a) {
-	return mul(*this, a);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::mult(Decimal a, T b) {
-	return mul(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::mult(T a) {
 	return mul(*this, a);
 }
 Decimal Decimal::times(Decimal a, Decimal b) {
@@ -964,26 +873,10 @@ Decimal Decimal::times(Decimal a, Decimal b) {
 Decimal Decimal::times(Decimal a) {
 	return mul(*this, a);
 }
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::times(Decimal a, T b) {
-	return mul(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::times(T a) {
-	return mul(*this, a);
-}
 Decimal Decimal::multiply(Decimal a, Decimal b) {
 	return mul(a, b);
 }
 Decimal Decimal::multiply(Decimal a) {
-	return mul(*this, a);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::multiply(Decimal a, T b) {
-	return mul(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::multiply(T a) {
 	return mul(*this, a);
 }
 
@@ -993,26 +886,10 @@ Decimal Decimal::div(Decimal a, Decimal b) {
 Decimal Decimal::div(Decimal a) {
 	return div(*this, a);
 }
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::div(Decimal a, T b) {
-	return mul(a, 1.0 / b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::div(T a) {
-	return div(*this, a);
-}
 Decimal Decimal::divide(Decimal a, Decimal b) {
 	return div(a, b);
 }
 Decimal Decimal::divide(Decimal a) {
-	return div(*this, a);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::divide(Decimal a, T b) {
-	return div(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::divide(T a) {
 	return div(*this, a);
 }
 Decimal Decimal::divideBy(Decimal a, Decimal b) {
@@ -1021,26 +898,10 @@ Decimal Decimal::divideBy(Decimal a, Decimal b) {
 Decimal Decimal::divideBy(Decimal a) {
 	return div(*this, a);
 }
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::divideBy(Decimal a, T b) {
-	return div(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::divideBy(T a) {
-	return div(*this, a);
-}
 Decimal Decimal::dividedBy(Decimal a, Decimal b) {
 	return div(a, b);
 }
 Decimal Decimal::dividedBy(Decimal a) {
-	return div(*this, a);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::dividedBy(Decimal a, T b) {
-	return div(a, b);
-}
-template <typename T> requires (std::integral<T> || std::floating_point<T>)
-Decimal Decimal::dividedBy(T a) {
 	return div(*this, a);
 }
 Decimal Decimal::sr(Decimal a, Decimal b) {

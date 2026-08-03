@@ -198,17 +198,9 @@ public:
 	//operations
 	//a + b
 	static Decimal add(Decimal a, Decimal b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	static Decimal add(Decimal a, T b);
 	Decimal add(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	Decimal add(T a);
 	static Decimal plus(Decimal a, Decimal b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	static Decimal plus(Decimal a, T b);
 	Decimal plus(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	Decimal plus(T a);
 	//a - b
 	static Decimal sub(Decimal a, Decimal b);
 	Decimal sub(Decimal a);
@@ -220,54 +212,22 @@ public:
 	//a * b
 	static Decimal mul(Decimal a, Decimal b);
 	Decimal mul(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	static Decimal mul(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-	Decimal mul(T a);
 	static Decimal mult(Decimal a, Decimal b);
 	Decimal mult(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal mult(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal mult(T a);
 	static Decimal times(Decimal a, Decimal b);
 	Decimal times(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal times(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal times(T a);
 	static Decimal multiply(Decimal a, Decimal b);
 	Decimal multiply(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal multiply(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal multiply(T a);
 
 	//a / b
 	static Decimal div(Decimal a, Decimal b);
 	Decimal div(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal div(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal div(T a);
 	static Decimal divide(Decimal a, Decimal b);
 	Decimal divide(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal divide(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal divide(T a);
 	static Decimal divideBy(Decimal a, Decimal b);
 	Decimal divideBy(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal divideBy(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal divideBy(T a);
 	static Decimal dividedBy(Decimal a, Decimal b);
 	Decimal dividedBy(Decimal a);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		static Decimal dividedBy(Decimal a, T b);
-	template <typename T> requires (std::integral<T> || std::floating_point<T>)
-		Decimal dividedBy(T a);
 	//WARNING, only bitshifts when values are lower than the 64 bit integer limit, values over the 64 bit integer limit will try to emulate this behavior
 	//this is (probably) faster than the div functions
 	//roughly a / 2^(b) or a >> b
@@ -395,6 +355,130 @@ public:
 	//log10^b(a)
 	static Decimal repLog10(Decimal a, Decimal b);
 	static Decimal rLog10(Decimal a, Decimal b);
+	
+	//integral operations
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal add(Decimal a, T b) {
+		if (isZero(b)) return a;
+		if (a.sign == 0) return Decimal(static_cast<double>(b));
+
+		Decimal A;
+		T B;
+		if (cmpabs(a, b) > 0) {
+			A = a;
+			B = b;
+		}
+		else {
+			B = toDouble(a);
+			A = Decimal(static_cast<double>(b));
+		}
+		if (A.layer == 0) return Decimal(A.mag * A.sign + B);
+		else {
+			if (std::abs(B) >= EXP_LIMIT) {
+				double x = A.mag - B;
+				if (std::abs(x) > MAX_SIGNIFICANT_DIGITS) return A;
+				double _magdiff = std::pow(10, -x);
+				double _mantissa = toSign(B) + (A.sign * _magdiff);
+				return Decimal(toSign(_mantissa), 1, B + d_maglog10(_mantissa));
+			}
+			else {
+				double x = A.mag - std::log10(static_cast<double>(B));
+				if (std::abs(x) > MAX_SIGNIFICANT_DIGITS) return A;
+				double _magdiff = std::pow(10, -x);
+				double _mantissa = toSign(B) + (A.sign * _magdiff);
+				return Decimal(toSign(_mantissa), 1, std::log10(static_cast<double>(B)) + d_maglog10(_mantissa));
+			}
+		}
+		try {
+			throw std::invalid_argument("Invalid arguments for addition");
+		}
+		catch (const std::invalid_argument e) {
+			std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
+		}
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal add(T a) {
+		return add(*this, a);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal plus(Decimal a, T b) {
+		return add(a, b);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal plus(T a) {
+		return add(*this, a);
+	}
+
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal mul(Decimal a, T b) {
+		if (a.sign == 0 || isZero(b)) return Decimal();
+
+		//turning b into a decimal but with way less overhead
+		int layerb = 0, signb = toSign(b);
+		if (std::abs(b) >= EXP_LIMIT) {
+			layerb = 1;
+			b = std::log10(std::abs(b));
+		}
+
+		if (a.layer == layerb && a.mag == -b) return Decimal(a.sign * signb, 0, 1);
+
+		Decimal A;
+		T B;
+		if (a.layer > layerb || (a.layer == layerb && std::abs(a.mag) > std::abs(b))) {
+			A = a;
+			B = b;
+		}
+		else {
+			A = Decimal(b);
+			layerb = a.layer;
+			signb = a.sign;
+			B = a.toDouble();
+		}
+
+		if (A.layer == 0 && layerb == 0) return Decimal(A.sign * signb * A.mag * B);
+		else if (A.layer >= 3 || A.layer - layerb == 2) return Decimal(A.sign * signb, A.layer, A.mag);
+		else if (A.layer == 1 && layerb == 0) return Decimal(A.sign * signb, 1, A.mag + std::log10(B));
+		else if (A.layer == 1 && layerb == 1) return Decimal(A.sign * signb, 1, A.mag + B);
+		else if ((A.layer == 2 && layerb == 1) || (A.layer == 2 && layerb == 2)) {
+			Decimal _newDecimal = add(Decimal(toSign(A.mag), A.layer - 1, std::abs(A.mag)), (Decimal(toSign(B), layerb - 1, std::abs(B))));
+			return Decimal(A.sign * signb, _newDecimal.layer + 1, _newDecimal.sign * _newDecimal.mag);
+		}
+		try {
+			throw std::invalid_argument("Invalid arguments for multiplication");
+		}
+		catch (const std::invalid_argument e) {
+			std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
+			return Decimal();
+		}
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal mul(T a) {
+		return mul(*this, a);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal mult(Decimal a, T b) {
+		return mul(a, b);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal mult(T a) {
+		return mul(*this, a);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal times(Decimal a, T b) {
+		return mul(a, b);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal times(T a) {
+		return mul(*this, a);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal multiply(Decimal a, T b) {
+		return mul(a, b);
+	}
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal multiply(T a) {
+		return mul(*this, a);
+	}
 };
 
 extern const Decimal INF;
