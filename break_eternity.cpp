@@ -809,7 +809,9 @@ Decimal Decimal::add(Decimal a, T b) {
 			return FC(toSign(_mantissa), 1, std::log10(static_cast<double>(B)) + d_maglog10(_mantissa));
 		}
 	}
-	try throw std::invalid_argument("Invalid arguments for addition");
+	try {
+		throw std::invalid_argument("Invalid arguments for addition");
+	}
 	catch (const std::invalid_argument e) {
 		std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
 	}
@@ -930,7 +932,9 @@ Decimal Decimal::mul(Decimal a, T b) {
 		Decimal _newDecimal = add(FC(toSign(A.mag), A.layer - 1, std::abs(A.mag)), (FC(toSign(B), layerb - 1, std::abs(B))));
 		return FC(A.sign * signb, _newDecimal.layer + 1, _newDecimal.sign * _newDecimal.mag);
 	}
-	try throw std::invalid_argument("Invalid arguments for multiplication");
+	try {
+		throw std::invalid_argument("Invalid arguments for multiplication");
+	}
 	catch (const std::invalid_argument e) {
 		std::cerr << "\033[31m" << "Invalid argument error: " << e.what() << "\033[0m" << std::endl;
 		return Decimal();
