@@ -52,8 +52,7 @@ public:
 	//Decimal.normalize() constructor
 	Decimal() : sign(0), layer(0), mag(0) {}
 	//primary constructor, Decimal test(x), similar to BE's test = new Decimal(x)
-	template <typename T>
-		requires (std::integral<T> || std::floating_point<T>)
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
 	Decimal(const T _value) : sign(toSign(_value)), layer(layerChecker(_value, 0)), mag(setMagBasedOnLayer(_value* sign, layer, sign)) {}
 	//secondary constructor, Decimal test(sign, layer, mag), similar to BE's test = new Decimal.fromComponents(sign, layer, mag)
 	Decimal(const Sign _sign, const Layer _layer, const Mag _mag) : sign(_sign), layer(_layer), mag(_mag) {}
@@ -95,6 +94,10 @@ public:
 	//for some reason this is a different function that just calling cmp(|a|, |b|) lol but that's essentially what it does
 	static int cmpabs(Decimal a, Decimal b);
 	int cmpabs(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static int cmpabs(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	int cmpabs(T a);
 	static int compareAbs(Decimal a, Decimal b);
 	int compareAbs(Decimal a);
 	//a > b
@@ -195,9 +198,17 @@ public:
 	//operations
 	//a + b
 	static Decimal add(Decimal a, Decimal b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal add(Decimal a, T b);
 	Decimal add(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal add(T a);
 	static Decimal plus(Decimal a, Decimal b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal plus(Decimal a, T b);
 	Decimal plus(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal plus(T a);
 	//a - b
 	static Decimal sub(Decimal a, Decimal b);
 	Decimal sub(Decimal a);
@@ -209,22 +220,54 @@ public:
 	//a * b
 	static Decimal mul(Decimal a, Decimal b);
 	Decimal mul(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	static Decimal mul(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+	Decimal mul(T a);
 	static Decimal mult(Decimal a, Decimal b);
 	Decimal mult(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal mult(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal mult(T a);
 	static Decimal times(Decimal a, Decimal b);
 	Decimal times(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal times(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal times(T a);
 	static Decimal multiply(Decimal a, Decimal b);
 	Decimal multiply(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal multiply(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal multiply(T a);
 
 	//a / b
 	static Decimal div(Decimal a, Decimal b);
 	Decimal div(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal div(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal div(T a);
 	static Decimal divide(Decimal a, Decimal b);
 	Decimal divide(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal divide(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal divide(T a);
 	static Decimal divideBy(Decimal a, Decimal b);
 	Decimal divideBy(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal divideBy(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal divideBy(T a);
 	static Decimal dividedBy(Decimal a, Decimal b);
 	Decimal dividedBy(Decimal a);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		static Decimal dividedBy(Decimal a, T b);
+	template <typename T> requires (std::integral<T> || std::floating_point<T>)
+		Decimal dividedBy(T a);
 	//WARNING, only bitshifts when values are lower than the 64 bit integer limit, values over the 64 bit integer limit will try to emulate this behavior
 	//this is (probably) faster than the div functions
 	//roughly a / 2^(b) or a >> b
